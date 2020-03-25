@@ -1,0 +1,24 @@
+version: '3.2'
+services:
+  redisadmin:
+    image: erikdubbelboer/phpredisadmin
+    environment:
+      - REDIS_1_HOST=redis
+    ports:
+      - "16379:80"
+
+  redis:
+    user: "1000:50"
+    image: redis:5.0-alpine
+    volumes:
+      - "./data:/data"
+    ports:
+      - "6379:6379"
+
+  php:
+    user: "1000:50"
+    build: ./images/php
+    volumes:
+      - "./php:/var/www/app"
+    depends_on:
+      - redis
