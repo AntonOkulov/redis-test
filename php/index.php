@@ -11,6 +11,7 @@ $redis->pconnect('redis', 6379);
 // - Последнее изменение ['amount' => 100, 'timestamp' => ...] каждой из валют (hash)
 // - Список самых популярных валют (set)
 
+//////////// Установка скалярных значений (строк)
 
 // Значение будет храниться бесконечно долго
 $redis->set('rate:GBP', 92);
@@ -18,13 +19,34 @@ $redis->set('rate:GBP', 92);
 // Установим строку
 $redis->set('description:GBP', 'Фунт стерлингов');
 
-// Значение будет храниться 60 секунд
-$redis->set('rate:USD', 77, 60);
-
 // Установить значение, если таковое не существует
 // Если существует - ничего не делать
 // SET if Not eXists
 $redis->setnx('rate:GBP', 100);
+
+// Установить сразу несколько значений
+// Так же сработает msetnx
+$redis->mset([
+    'rate:EUR' => 80,
+    'rate:JPY' => 60
+]);
+
+
+
+
+////////////// Управление времем жизни значений
+
+// Значение будет храниться 60 секунд
+$redis->set('rate:USD', 77, 60);
+
+// Получить оставшееся время жизни значения
+$ttl = $redis->ttl('rate:USD');
+
+// Теперь значение будет храниться бесконечно
+$redis->persist('rate:USD');
+
+// Установить время жизни существующего значения
+$redis->expire('rate:USD', 3600);
 
 
 
@@ -33,18 +55,31 @@ $redis->setnx('rate:GBP', 100);
 
 ////////////// Получение значений
 
+
+// Проверка на существование значение
+$redis->exists('rate:GBP');
+
 // Получение скалярного значения (строки)
 // Все скалярные значения в Redis - строки
-$redis->get('rate:GBP');
+$value = $redis->get('rate:GBP');
 
-// Получить оставшееся время жизни значения
-$redis->ttl('rate:USD');
+// Установить сразу несколько значений
+$values = $redis->mget([
+    'rate:EUR',
+    'rate:JPY'
+]);
 
-// Удаление значений
+
+
+
+//////////////// Удаление значений
+
+// Удаление одного значения
+$quantity = $redis->del('rate:GBP');
+
+// Удаление нескольких значений
 $quantity = $redis->del('rate:GBP', 'rate:USD');
 $quantity = $redis->del(['rate:GBP', 'rate:USD']);
-
-
 
 
 
@@ -66,7 +101,8 @@ $newValue = $redis->incrBy('rate:GBP', 10);
 // Уменьшаем значение на N
 $newValue = $redis->decrBy('rate:GBP', 20);
 
-
+// Увеличение на дробные значения
+$newValue = $redis->incrByFloat('rate:GBP', 1.5);
 
 
 
@@ -75,9 +111,17 @@ $newValue = $redis->decrBy('rate:GBP', 20);
 
 // Дописать строку
 $redis->append('description:GBP', ' (Великобритания)');
-var_dump($redis->get('description:GBP'));
+$value = $redis->get('description:GBP');
+// $value = "Фунт стерлингов (Великобритания)"
+
+// Получить часть строки
+$value = $redis->getRange('description:GBP', 0, 3);
+// $value = "Фунт"
 
 
+$redis->setRange('description:GBP', 5, 'Стерлингов');
+$value = $redis->get('description:GBP');
+// $value = "Фунт Стерлингов (Великобритания)"
 
 
 
